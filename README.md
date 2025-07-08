@@ -1,165 +1,85 @@
-#include <AFMotor.h>
+# 🚗 Carrito Seguidor de Líneas de Color
 
-AF_DCMotor motorDE(2);
-AF_DCMotor motorIZQ(3);
+Este proyecto consiste en un carrito autónomo diseñado para seguir una línea de color específica (naranja o verde) sobre un fondo blanco. Su principal objetivo es mantener el rumbo sin confundirse, incluso cuando las líneas de ambos colores se cruzan o entrelazan.
 
-// Pines para los sensores de color (IZQ y DER)
-const int s0=7, s1=8, s2=10, s3=11, out=12; //Sensor IZQ
-const int ds0=1, ds1=0, ds2=2, ds3=3, dout=13; //Sensor DER
+El sistema utiliza sensores de color y lógica de control para detectar y seguir únicamente el color deseado, ignorando interferencias visuales del otro tono. Es ideal para prácticas de robótica básica, visión por sensores y proyectos de ingeniería mecatrónica.
 
-// Variables para almacenar los valores de calibración
-int whiteValue, greenValue, orangeValue;
-int threshold = 30; // Umbral para diferenciar colores
+---
 
-void setup(){
-  Serial.begin(9600);
-  
-  // Configuración Sensor IZQ
-  pinMode(s0,OUTPUT);
-  pinMode(s1,OUTPUT);
-  pinMode(s2,OUTPUT);
-  pinMode(s3,OUTPUT);
-  pinMode(out,INPUT);
-  digitalWrite(s0, HIGH);
-  digitalWrite(s1,HIGH);
-  
-  // Configuración Sensor DER
-  pinMode(ds0,OUTPUT);
-  pinMode(ds1,OUTPUT);
-  pinMode(ds2,OUTPUT);
-  pinMode(ds3,OUTPUT);
-  pinMode(dout,INPUT);
-  digitalWrite(ds0, HIGH);
-  digitalWrite(ds1,HIGH);
-  
-  // Calibración inicial
-  calibrateSensors();
-  delay(3000);
-}
+## ⚙️ Tecnologías y componentes utilizados
 
-void loop(){
-  // Leer valores actuales de los sensores
-  int izqR = getRedIZQ();
-  int izqG = getGreenIZQ();
-  int izqB = getBlueIZQ();
-  
-  int derR = getRedDER();
-  int derG = getGreenDER();
-  int derB = getBlueDER();
-  
-  // Determinar qué color está detectando cada sensor
-  bool izqOnGreen = isGreen(izqR, izqG, izqB);
-  bool derOnGreen = isGreen(derR, derG, derB);
-  bool izqOnOrange = isOrange(izqR, izqG, izqB);
-  bool derOnOrange = isOrange(derR, derG, derB);
-  
-  // Lógica de movimiento
-  if (izqOnOrange || derOnOrange) {
-    // Si detecta naranja, detenerse o retroceder
-    motorDE.run(RELEASE);
-    motorIZQ.run(RELEASE);
-    delay(500);
-    motorDE.run(BACKWARD);
-    motorIZQ.run(BACKWARD);
-    delay(300);
-  }
-  else if (izqOnGreen && derOnGreen) {
-    // Ambos sensores en verde - avanzar
-    motorDE.setSpeed(255);
-    motorDE.run(FORWARD);
-    motorIZQ.setSpeed(255);
-    motorIZQ.run(FORWARD);
-  }
-  else if (izqOnGreen && !derOnGreen) {
-    // Solo izquierda en verde - girar izquierda
-    motorDE.setSpeed(255);
-    motorDE.run(FORWARD);
-    motorIZQ.setSpeed(100);
-    motorIZQ.run(FORWARD);
-  }
-  else if (!izqOnGreen && derOnGreen) {
-    // Solo derecha en verde - girar derecha
-    motorDE.setSpeed(100);
-    motorDE.run(FORWARD);
-    motorIZQ.setSpeed(255);
-    motorIZQ.run(FORWARD);
-  }
-  else {
-    // Ningún sensor en verde - buscar línea
-    motorDE.setSpeed(150);
-    motorDE.run(FORWARD);
-    motorIZQ.setSpeed(150);
-    motorIZQ.run(BACKWARD);
-    delay(200);
-  }
-  
-  delay(50); // Pequeña pausa para estabilidad
-}
+### Software
+- Arduino IDE
 
-// Funciones para leer colores de cada sensor
-int getRedIZQ(){
-  digitalWrite(s2, LOW);
-  digitalWrite(s3, LOW);
-  return pulseIn(out, LOW);
-}
+### Hardware
+- Arduino Uno
+- Shield de motores L293D
+- 2 sensores de color TCS3200
+- 2 motores amarillos con reductores de eje doble
+- 4 pilas AA (6V en total) para la alimentación
+- Chasis con ruedas (según diseño propio)
+- Protoboard y cables jumper (opcional, según la conexión)
 
-int getGreenIZQ(){
-  digitalWrite(s2, HIGH);
-  digitalWrite(s3, HIGH);
-  return pulseIn(out, LOW);
-}
+---
 
-int getBlueIZQ(){
-  digitalWrite(s2, LOW);
-  digitalWrite(s3, HIGH);
-  return pulseIn(out, LOW);
-}
+## 🛠️ Instalación y uso
 
-int getRedDER(){
-  digitalWrite(ds2, LOW);
-  digitalWrite(ds3, LOW);
-  return pulseIn(dout, LOW);
-}
+1. Clona este repositorio:
+   ```bash
+   git clone https://github.com/tuusuario/carrito-seguidor-lineas-color.git
+   ```
 
-int getGreenDER(){
-  digitalWrite(ds2, HIGH);
-  digitalWrite(ds3, HIGH);
-  return pulseIn(dout, LOW);
-}
+2. Abre el archivo `.ino` en Arduino IDE.
 
-int getBlueDER(){
-  digitalWrite(ds2, LOW);
-  digitalWrite(ds3, HIGH);
-  return pulseIn(dout, LOW);
-}
+3. Conecta el Arduino Uno mediante el cable USB y selecciona el puerto correcto.
 
-// Función de calibración
-void calibrateSensors() {
-  Serial.println("Calibrando sensores... Coloque el sensor IZQ sobre la línea verde");
-  delay(3000);
-  greenValue = getGreenIZQ();
-  
-  Serial.println("Coloque el sensor IZQ sobre la línea naranja");
-  delay(3000);
-  orangeValue = getGreenIZQ();
-  
-  Serial.println("Coloque el sensor IZQ sobre la base blanca");
-  delay(3000);
-  whiteValue = getGreenIZQ();
-  
-  Serial.println("Calibración completada");
-  Serial.print("Verde: "); Serial.println(greenValue);
-  Serial.print("Naranja: "); Serial.println(orangeValue);
-  Serial.print("Blanco: "); Serial.println(whiteValue);
-}
+4. Carga el código al microcontrolador.
 
-// Funciones para determinar colores
-bool isGreen(int r, int g, int b) {
-  // Comparar principalmente el valor verde
-  return abs(g - greenValue) < threshold && abs(g - orangeValue) > threshold;
-}
+5. Coloca el carrito sobre una pista blanca que contenga líneas naranja y verde.
 
-bool isOrange(int r, int g, int b) {
-  // El naranja tiene componentes rojo y verde
-  return abs(g - orangeValue) < threshold && abs(r - orangeValue) < threshold;
-}
+6. Asegúrate de haber calibrado previamente los sensores TCS3200 para que reconozcan con precisión los valores RGB del color a seguir.
+
+7. Alimenta el sistema con las 4 pilas AA.
+
+---
+
+## 🎯 Funcionamiento general
+
+- El carrito utiliza dos sensores de color TCS3200 ubicados al frente, ligeramente separados, para escanear el color directamente bajo cada uno.
+- Según el color detectado, el sistema toma decisiones para mantener el rumbo, girar o corregir su trayectoria.
+- Si el carrito encuentra una línea del color **no deseado**, la ignora y continúa buscando el color objetivo.
+- La lógica permite priorizar siempre un solo color durante todo el recorrido.
+
+---
+
+## ✨ Funcionalidades destacadas
+
+- 🔍 Detección confiable de dos colores distintos (verde y naranja).
+- 🧠 Discriminación activa: sigue solo el color objetivo ignorando el otro.
+- 🔁 Mantenimiento de trayectoria incluso con entrelazamientos.
+- ⚡ Bajo consumo energético gracias al uso eficiente de componentes.
+
+---
+
+## 📌 Recomendaciones
+
+- Calibra los sensores de color bajo la misma iluminación que se usará en la pista.
+- Usa una superficie blanca limpia para evitar interferencias.
+- Puedes ajustar los umbrales de detección en el código para mejorar la precisión.
+
+---
+
+## 📄 Licencia
+
+Este proyecto no cuenta con una licencia específica. Todos los derechos reservados por su autor.
+
+---
+
+## 👨‍💻 Autor
+
+**Daniel Urzúa**  
+Desarrollado con fines educativos y de competencia en proyectos de robótica autónoma.
+
+---
+
+
