@@ -26,7 +26,7 @@ El sistema utiliza sensores de color y lógica de control para detectar y seguir
 
 1. Clona este repositorio:
    ```bash
-   git clone https://github.com/tuusuario/carrito-seguidor-lineas-color.git
+   git clone https://github.com/danurzua5/concurso-carro.git
    ```
 
 2. Abre el archivo `.ino` en Arduino IDE.
