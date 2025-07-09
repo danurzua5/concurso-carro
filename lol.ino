@@ -8,8 +8,10 @@ const int s0=7, s1=8, s2=10, s3=11, out=12; //Sensor IZQ
 const int ds0=1, ds1=0, ds2=2, ds3=3, dout=13; //Sensor DER
 
 // Variables para almacenar los valores de calibración
-int whiteValue, greenValue, orangeValue;
-int threshold = 30; // Umbral para diferenciar colores
+int greenR, greenG, greenB;
+int orangeR, orangeG, orangeB;
+int whiteR, whiteG, whiteB;
+int threshold = 25; // Umbral ajustado para mejor precisión
 
 void setup(){
   Serial.begin(9600);
@@ -34,7 +36,7 @@ void setup(){
   
   // Calibración inicial
   calibrateSensors();
-  delay(3000);
+  delay(2000);
 }
 
 void loop(){
@@ -53,47 +55,49 @@ void loop(){
   bool izqOnOrange = isOrange(izqR, izqG, izqB);
   bool derOnOrange = isOrange(derR, derG, derB);
   
-  // Lógica de movimiento
+  // Lógica de movimiento mejorada
   if (izqOnOrange || derOnOrange) {
-    // Si detecta naranja, detenerse o retroceder
+    // Si detecta naranja, retroceder y buscar línea verde
     motorDE.run(RELEASE);
     motorIZQ.run(RELEASE);
-    delay(500);
+    delay(200);
+    motorDE.setSpeed(200);
     motorDE.run(BACKWARD);
+    motorIZQ.setSpeed(200);
     motorIZQ.run(BACKWARD);
-    delay(300);
+    delay(150);
   }
   else if (izqOnGreen && derOnGreen) {
-    // Ambos sensores en verde - avanzar
+    // Ambos sensores en verde - avanzar recto
     motorDE.setSpeed(255);
     motorDE.run(FORWARD);
     motorIZQ.setSpeed(255);
     motorIZQ.run(FORWARD);
   }
   else if (izqOnGreen && !derOnGreen) {
-    // Solo izquierda en verde - girar izquierda
+    // Solo izquierda en verde - girar izquierda suave
     motorDE.setSpeed(255);
     motorDE.run(FORWARD);
-    motorIZQ.setSpeed(100);
+    motorIZQ.setSpeed(180);
     motorIZQ.run(FORWARD);
   }
   else if (!izqOnGreen && derOnGreen) {
-    // Solo derecha en verde - girar derecha
-    motorDE.setSpeed(100);
+    // Solo derecha en verde - girar derecha suave
+    motorDE.setSpeed(180);
     motorDE.run(FORWARD);
     motorIZQ.setSpeed(255);
     motorIZQ.run(FORWARD);
   }
   else {
     // Ningún sensor en verde - buscar línea
-    motorDE.setSpeed(150);
+    motorDE.setSpeed(120);
     motorDE.run(FORWARD);
-    motorIZQ.setSpeed(150);
+    motorIZQ.setSpeed(120);
     motorIZQ.run(BACKWARD);
-    delay(200);
+    delay(100);
   }
   
-  delay(50); // Pequeña pausa para estabilidad
+  delay(30); // Pausa reducida para mejor respuesta
 }
 
 // Funciones para leer colores de cada sensor
@@ -133,33 +137,50 @@ int getBlueDER(){
   return pulseIn(dout, LOW);
 }
 
-// Función de calibración
+// Función de calibración mejorada
 void calibrateSensors() {
-  Serial.println("Calibrando sensores... Coloque el sensor IZQ sobre la línea verde");
-  delay(3000);
-  greenValue = getGreenIZQ();
+  Serial.println("=== CALIBRACIÓN DE SENSORES ===");
   
-  Serial.println("Coloque el sensor IZQ sobre la línea naranja");
+  Serial.println("Coloque el sensor IZQ sobre la línea VERDE");
   delay(3000);
-  orangeValue = getGreenIZQ();
+  greenR = getRedIZQ();
+  greenG = getGreenIZQ();
+  greenB = getBlueIZQ();
   
-  Serial.println("Coloque el sensor IZQ sobre la base blanca");
+  Serial.println("Coloque el sensor IZQ sobre la línea NARANJA");
   delay(3000);
-  whiteValue = getGreenIZQ();
+  orangeR = getRedIZQ();
+  orangeG = getGreenIZQ();
+  orangeB = getBlueIZQ();
   
-  Serial.println("Calibración completada");
-  Serial.print("Verde: "); Serial.println(greenValue);
-  Serial.print("Naranja: "); Serial.println(orangeValue);
-  Serial.print("Blanco: "); Serial.println(whiteValue);
+  Serial.println("Coloque el sensor IZQ sobre la base BLANCA");
+  delay(3000);
+  whiteR = getRedIZQ();
+  whiteG = getGreenIZQ();
+  whiteB = getBlueIZQ();
+  
+  Serial.println("=== VALORES DE CALIBRACIÓN ===");
+  Serial.print("Verde - R:"); Serial.print(greenR); Serial.print(" G:"); Serial.print(greenG); Serial.print(" B:"); Serial.println(greenB);
+  Serial.print("Naranja - R:"); Serial.print(orangeR); Serial.print(" G:"); Serial.print(orangeG); Serial.print(" B:"); Serial.println(orangeB);
+  Serial.print("Blanco - R:"); Serial.print(whiteR); Serial.print(" G:"); Serial.print(whiteG); Serial.print(" B:"); Serial.println(whiteB);
+  Serial.println("Calibración completada!");
 }
 
-// Funciones para determinar colores
+// Funciones mejoradas para determinar colores
 bool isGreen(int r, int g, int b) {
-  // Comparar principalmente el valor verde
-  return abs(g - greenValue) < threshold && abs(g - orangeValue) > threshold;
+  // Verificar que el verde sea dominante y esté cerca del valor calibrado
+  int greenDiff = abs(g - greenG);
+  int orangeDiff = abs(g - orangeG);
+  int whiteDiff = abs(g - whiteG);
+  
+  return greenDiff < threshold && greenDiff < orangeDiff && greenDiff < whiteDiff;
 }
 
 bool isOrange(int r, int g, int b) {
-  // El naranja tiene componentes rojo y verde
-  return abs(g - orangeValue) < threshold && abs(r - orangeValue) < threshold;
+  // El naranja tiene componentes rojo y verde similares
+  int orangeRDiff = abs(r - orangeR);
+  int orangeGDiff = abs(g - orangeG);
+  int greenDiff = abs(g - greenG);
+  
+  return orangeRDiff < threshold && orangeGDiff < threshold && orangeGDiff < greenDiff;
 }
